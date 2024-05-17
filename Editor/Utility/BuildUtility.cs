@@ -26,8 +26,6 @@
 
 namespace PlayEveryWare.EpicOnlineServices.Build
 {
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using PlayEveryWare.EpicOnlineServices.Utility;
     using System;
     using System.Collections.Generic;
@@ -38,8 +36,9 @@ namespace PlayEveryWare.EpicOnlineServices.Build
     using System.Text.RegularExpressions;
     using UnityEditor;
     using UnityEditor.Build;
+    using UnityEngine;
     using Debug = UnityEngine.Debug;
-
+    using JsonUtility = PlayEveryWare.EpicOnlineServices.Utility.JsonUtility;
     /// <summary>
     /// Contains functions to carry out a variety of tasks related to building.
     /// </summary>
@@ -71,25 +70,17 @@ namespace PlayEveryWare.EpicOnlineServices.Build
         /// <returns>True if the plugin is deployed as UPM, false otherwise.</returns>
         private static bool IsDeployedAsUPM()
         {
-            try
+            string packagePathname = Path.GetFullPath(Path.Combine("Packages", EOSPackageInfo.PackageName));
+
+            if (Directory.Exists(packagePathname))
             {
-                string manifestJson = FileUtility.ReadAllText(
-                    Path.Combine(FileUtility.GetProjectPath(), "Packages", "manifest.json")
-                );
-
-                Manifest manifest = JsonConvert.DeserializeObject<Manifest>(manifestJson);
-
-                if (manifest != null && manifest.dependencies.ContainsKey(EOSPackageInfo.PackageName))
-                {
-                    return true;
-                }
+                Debug.Log("Deployed via UPM");
+                return true;
             }
-            catch (Exception e)
+            else
             {
-                Debug.LogWarning($"There was a problem determining if deployed via UPM: \"{e.Message}\".");
+                return false;
             }
-
-            return false;
         }
 
         /// <summary>
@@ -111,6 +102,19 @@ namespace PlayEveryWare.EpicOnlineServices.Build
             /// The toolsets that are installed with the installation of Visual Studio.
             /// </summary>
             public string[] Toolsets;
+        }
+
+        [Serializable]
+        public class Installation
+        {
+            public string installationPath;
+            public string installationVersion;
+        }
+
+        [Serializable]
+        private class VSWhereOutput
+        {
+            public Installation[] installations;
         }
 
         /// <summary>
@@ -168,6 +172,12 @@ namespace PlayEveryWare.EpicOnlineServices.Build
         /// <exception cref="BuildFailedException">Gets called if the vswhere.exe utility returned an exit code indicating failure.</exception>
         public static void FindVSInstallations()
         {
+            // Stop if we have already got the visual studio installations.
+            if (VisualStudioInstallations != null && VisualStudioInstallations.Count > 0)
+            {
+                return;
+            }
+
             const string vsWhereFilePath = @"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe";
 
             if (false == File.Exists(vsWhereFilePath))
@@ -194,20 +204,20 @@ namespace PlayEveryWare.EpicOnlineServices.Build
             // Wait for the process to exit
             p.WaitForExit();
 
-            string vsWhereOutput = outputBuilder.ToString();
+            // Alter the json output from vswhere so that it plays nice with JsonUtility.
+            string vsWhereOutputString = @"{""installations"":" + outputBuilder.ToString() + "}";
 
             // Continue with processing vsWhereOutput...
-            JArray installations = JArray.Parse(vsWhereOutput);
+            VSWhereOutput vsWhereOutput = JsonUtility.FromJson<VSWhereOutput>(vsWhereOutputString);
 
             // Used to store the different installations of VS on the system.
             VisualStudioInstallations = new List<VSInstallation>();
-
-            foreach (var installation in installations)
+            foreach (var installation in vsWhereOutput.installations)
             {
                 try
                 {
-                    Version version = new(installation["installationVersion"]?.ToString() ?? string.Empty);
-                    string installPath = installation["installationPath"]?.ToString();
+                    Version version = new(installation.installationVersion ?? string.Empty);
+                    string installPath = installation.installationPath;
 
                     // stop processing if the install path is empty for some reason.
                     if (string.IsNullOrEmpty(installPath))
