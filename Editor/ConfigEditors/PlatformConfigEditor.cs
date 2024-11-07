@@ -21,25 +21,25 @@
 */
 namespace PlayEveryWare.EpicOnlineServices.Editor
 {
+    using System.Linq;
     using UnityEditor;
     using UnityEngine;
     using Utility;
 
     /// <summary>
-    /// Contains implementations of IConfigEditor that are common to all ConfigEditors that represent the configuration options for a specific platform.
+    /// Contains implementations of IConfigEditor that are common to all
+    /// ConfigEditors that represent the configuration options for a specific
+    /// platform.
     /// </summary>
     /// <typeparam name="T">Intended to be a type accepted by the templated class ConfigHandler.</typeparam>
-    public abstract class PlatformConfigEditor<T> : ConfigEditor<T> where T : PlatformConfig
+    public abstract class PlatformConfigEditor<T> : ConfigEditor<T>, IPlatformConfigEditor where T : PlatformConfig
     {
-        /// <summary>
-        /// The platform that this PlatformConfigEditor represents.
-        /// </summary>
-        protected PlatformManager.Platform Platform;
-
-        protected PlatformConfigEditor(PlatformManager.Platform platform) :
-            base(PlatformManager.GetFullName(platform))
+        protected PlatformConfigEditor()
         {
-            this.Platform = platform;
+            Load();
+
+            // The label should always be the full name of the platform.
+            _labelText = PlatformManager.GetFullName(config.Platform);
         }
 
         /// <summary>
@@ -51,8 +51,10 @@ namespace PlayEveryWare.EpicOnlineServices.Editor
         /// </summary>
         public virtual void RenderOverrides()
         {
-            GUILayout.Label($"{PlatformManager.GetFullName(Platform)} Override Configuration Values",
+            GUILayout.Label($"{PlatformManager.GetFullName(config.Platform)} Override Configuration Values",
                 EditorStyles.boldLabel);
+
+            GUIEditorUtility.AssigningFlagTextField("Integrated Platform Management Flags (Separated by '|')", ref config.flags, 345);
 
             GUIEditorUtility.AssigningFlagTextField("Override Platform Flags (Separated by '|')", ref config.overrideValues.platformOptionsFlags, 250);
 
@@ -60,13 +62,29 @@ namespace PlayEveryWare.EpicOnlineServices.Editor
 
             GUIEditorUtility.AssigningFloatToStringField("Override repeat button delay for overlay", ref config.overrideValues.repeatButtonDelayForOverlay, 250);
 
+            // TODO: As far as can be determined, it appears that the following
+            //       values are the only ones within "overrideValues" that are
+            //       actually being used to override the otherwise defined
+            //       values within EOSConfig. Changing the values in the fields
+            //       for which the input fields are rendered above does not 
+            //       seem to have any affect. 
+            // 
+            //       This is a bug, but is not relevant to the current task as 
+            //       of this writing, which is to simply add the field member
+            //       "integratedPlatformManagementFlags" to EOSConfig, and make
+            //       sure that field is editable within the editor.
+
             GUIEditorUtility.AssigningULongToStringField("Thread Affinity: networkWork", ref config.overrideValues.ThreadAffinity_networkWork);
             GUIEditorUtility.AssigningULongToStringField("Thread Affinity: storageIO", ref config.overrideValues.ThreadAffinity_storageIO);
             GUIEditorUtility.AssigningULongToStringField("Thread Affinity: webSocketIO", ref config.overrideValues.ThreadAffinity_webSocketIO);
             GUIEditorUtility.AssigningULongToStringField("Thread Affinity: P2PIO", ref config.overrideValues.ThreadAffinity_P2PIO);
             GUIEditorUtility.AssigningULongToStringField("Thread Affinity: HTTPRequestIO", ref config.overrideValues.ThreadAffinity_HTTPRequestIO);
             GUIEditorUtility.AssigningULongToStringField("Thread Affinity: RTCIO", ref config.overrideValues.ThreadAffinity_RTCIO);
+        }
 
+        public bool IsPlatformAvailable()
+        {
+            return PlatformManager.GetAvailableBuildTargets().Contains(config.Platform);
         }
 
         public virtual void RenderPlatformSpecificOptions() { }

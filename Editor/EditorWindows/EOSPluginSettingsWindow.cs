@@ -28,8 +28,12 @@ using System.Collections.Generic;
 
 namespace PlayEveryWare.EpicOnlineServices.Editor.Windows
 {
+    using Config;
+    using System.Linq;
     using System.Threading.Tasks;
+    using UnityEditor.AnimatedValues;
     using Utility;
+    using Config = EpicOnlineServices.Config;
 
     /// <summary>
     /// Creates the view for showing the eos plugin editor config values.
@@ -39,17 +43,21 @@ namespace PlayEveryWare.EpicOnlineServices.Editor.Windows
     {
         private List<IConfigEditor> configEditors;
 
+        public EOSPluginSettingsWindow() : base("EOS Plugin Settings")
+        {
+        }
+
         [SettingsProvider]
         public static SettingsProvider CreateSettingsProvider()
         {
-            var eosPluginEditorConfigEditor = ScriptableObject.CreateInstance<EOSPluginSettingsWindow>();
-            eosPluginEditorConfigEditor.SetIsEmbedded(true);
-            var provider = new SettingsProvider("Preferences/EOS Plugin Configuration", SettingsScope.User)
+            var pluginSettingsWindow = CreateInstance<EOSPluginSettingsWindow>();
+            pluginSettingsWindow.SetIsEmbedded(true);
+            var provider = new SettingsProvider($"Preferences/{pluginSettingsWindow.WindowTitle}", SettingsScope.User)
             {
-                label = "EOS Plugin Configuration",
+                label = pluginSettingsWindow.WindowTitle,
                 guiHandler = (searchContext) =>
                 {
-                    eosPluginEditorConfigEditor.OnGUI();
+                    pluginSettingsWindow.OnGUI();
                 }
             };
 
@@ -59,7 +67,8 @@ namespace PlayEveryWare.EpicOnlineServices.Editor.Windows
         [MenuItem("Tools/EOS Plugin/Plugin Configuration")]
         public static void ShowWindow()
         {
-            GetWindow<EOSPluginSettingsWindow>("EOS Plugin Configuration");
+            var window = GetWindow<EOSPluginSettingsWindow>();
+            window.SetIsEmbedded(false);
         }
 
         public static bool IsAsset(string configFilepath)
@@ -84,18 +93,34 @@ namespace PlayEveryWare.EpicOnlineServices.Editor.Windows
         {
             configEditors ??= new List<IConfigEditor>
                 {
-                    new PrebuildConfigEditor(),
-                    new ToolsConfigEditor(),
-                    new AndroidBuildConfigEditor(),
-                    new LibraryBuildConfigEditor(),
-                    new SigningConfigEditor(),
-                    new PackagingConfigEditor()
+                    SetupConfigEditor<PrebuildConfig>(),
+                    SetupConfigEditor<ToolsConfig>(),
+                    SetupConfigEditor<AndroidBuildConfig>(),
+                    SetupConfigEditor<LibraryBuildConfig>(),
+                    SetupConfigEditor<SigningConfig>(),
+                    SetupConfigEditor<PackagingConfig>(),
+                    SetupConfigEditor<SteamConfig>()
                 };
 
             foreach (var editor in configEditors)
             {
-                await editor.Load();
+                await editor.LoadAsync();
             }
+        }
+
+        private IConfigEditor SetupConfigEditor<T>() where T : PlayEveryWare.EpicOnlineServices.Config
+        {
+            ConfigEditor<T> newEditor = new (Repaint);
+            newEditor.Expanded += (sender, args) =>
+            {
+                // Close all the other config editors
+                foreach (var editor in configEditors.Where(editor => editor != sender))
+                {
+                    editor.Collapse();
+                }
+            };
+
+            return newEditor;
         }
 
         protected override void RenderWindow()
@@ -104,10 +129,7 @@ namespace PlayEveryWare.EpicOnlineServices.Editor.Windows
             {
                 foreach (var configurationSectionEditor in configEditors)
                 {
-                    GUILayout.Label(configurationSectionEditor.GetLabelText(), EditorStyles.boldLabel);
-                    GUIEditorUtility.HorizontalLine(Color.white);
-                    configurationSectionEditor.Render();
-                    EditorGUILayout.Space();
+                    _ = configurationSectionEditor.RenderAsync();
                 }
             }
 
@@ -122,6 +144,12 @@ namespace PlayEveryWare.EpicOnlineServices.Editor.Windows
         protected override void Teardown()
         {
             base.Teardown();
+
+            foreach (var editor in configEditors)
+                editor.Dispose();
+
+            configEditors.Clear();
+
             Save();
         }
 

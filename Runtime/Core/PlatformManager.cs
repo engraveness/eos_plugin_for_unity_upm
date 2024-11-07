@@ -24,7 +24,6 @@ namespace PlayEveryWare.EpicOnlineServices
 {
     using System.Collections.Generic;
     using System;
-    using System.IO;
 
 #if UNITY_EDITOR
     using UnityEditor;
@@ -32,6 +31,7 @@ namespace PlayEveryWare.EpicOnlineServices
 #endif
 
     using UnityEngine;
+    using Utility;
 
     public static class PlatformManager
     {
@@ -156,6 +156,30 @@ namespace PlayEveryWare.EpicOnlineServices
             };
 
         /// <summary>
+        /// Returns an IEnumerable of the platforms for which the current Unity
+        /// Editor is able to build projects for.
+        /// </summary>
+        /// <returns>
+        /// IEnumerable of the platforms for which the current Unity Editor is
+        /// able to build projects for.
+        /// </returns>
+        public static IEnumerable<Platform> GetAvailableBuildTargets()
+        {
+            foreach (BuildTarget target in Enum.GetValues(typeof(BuildTarget)))
+            {
+                var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
+
+                if (!BuildPipeline.IsBuildTargetSupported(buildTargetGroup, target))
+                    continue;
+
+                if (!TargetToPlatformsMap.TryGetValue(target, out Platform supportedPlatform))
+                    continue;
+
+                yield return supportedPlatform;
+            }
+        }
+
+        /// <summary>
         /// Get the platform that matches the given build target.
         /// </summary>
         /// <param name="target">The build target being built for.</param>
@@ -245,7 +269,7 @@ namespace PlayEveryWare.EpicOnlineServices
         /// <returns>Fully qualified path.</returns>
         public static string GetConfigFilePath(Platform platform)
         {
-            return Path.Combine(
+            return FileSystemUtility.CombinePaths(
                 Application.streamingAssetsPath,
                 "EOS",
                 GetConfigFileName(platform)

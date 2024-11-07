@@ -1,15 +1,15 @@
-<a href="/README.md"><img src="/docs/images/PlayEveryWareLogo.gif" alt="Lobby Screenshot" width="5%"/></a>
+<a href="/com.playeveryware.eos/README.md"><img src="/com.playeveryware.eos/Documentation~/images/PlayEveryWareLogo.gif" alt="Lobby Screenshot" width="5%"/></a>
 
 # <div align="center">Environment Setup for Android</div>
 ---
 
 ## Unity and Modules
 
-1. Install Unity (minimum version 2020.1.11), preferably on Unity Hub
+1. Install Unity (minimum version 2021.3.16f), preferably on Unity Hub
 
 2. Open the "Add modules" window.
 
-    <img src="/docs/images/unity_add_modules.png" width="500" />
+    <img src="/com.playeveryware.eos/Documentation~/images/unity_add_modules.png" width="500" />
 
 2. Select and install the following modules:
 
@@ -30,18 +30,18 @@ The following methods will show how to install the missing build-tool 30.0.3, an
 1. [Install Android Studio](https://developer.android.com/studio)
 2. Run the SDK Manager
 
-    <img src="/docs/images/android_studio_sdk_manager.png" width="500" />
+    <img src="/com.playeveryware.eos/Documentation~/images/android_studio_sdk_manager.png" width="500" />
 
 ### Manage SDK through command prompt
 
-1. (On Windows) If you don't already have the environment variable `JAVA_HOME` as a System Variable, add a new one with the value set to `C:\Program Files\Unity\Hub\Editor\2021.3.8f1\Editor\Data\PlaybackEngines\AndroidPlayer\OpenJDK`.
+1. (On Windows) If you don't already have the environment variable `JAVA_HOME` as a System Variable, add a new one with the value set to `C:\Program Files\Unity\Hub\Editor\2021.3.16f1\Editor\Data\PlaybackEngines\AndroidPlayer\OpenJDK`.
 
 2. Run the command prompt and navigate to the `SDK\tools\bin` folder.
 
     On Windows:
 
     ```bash
-    cd 'C:\Program Files\Unity\Hub\Editor\2021.3.8f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\tools\bin'
+    cd 'C:\Program Files\Unity\Hub\Editor\2021.3.16f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\tools\bin'
     ```
 
     For most *nix:

@@ -25,8 +25,6 @@ namespace PlayEveryWare.EpicOnlineServices.Editor.Config
     using EpicOnlineServices.Utility;
     using System.IO;
     using System.Threading.Tasks;
-    using UnityEditor;
-    using UnityEngine;
     using Config = EpicOnlineServices.Config;
 
     /// <summary>
@@ -36,7 +34,7 @@ namespace PlayEveryWare.EpicOnlineServices.Editor.Config
     /// </summary>
     public abstract class EditorConfig : Config
     {
-        protected EditorConfig(string filename) : base(filename, Path.Combine(FileUtility.GetProjectPath(), "etc/config/")) { }
+        protected EditorConfig(string filename) : base(filename, Path.Combine(FileSystemUtility.GetProjectPath(), "etc/config/")) { }
 
         // NOTE: This compiler block is here because the base class "Config" has
         //       the WriteAsync function surrounded by the same conditional.
